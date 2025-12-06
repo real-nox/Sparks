@@ -1,9 +1,8 @@
-const {Client, GatewayIntentBits} = require("discord.js");
-const {config} = require("dotenv"); config({quiet : true});
+const { Client, GatewayIntentBits, Collection } = require("discord.js");
+const { config } = require("dotenv"); config({ quiet: true });
 const { eventHandler } = require("./handler/eventHandler");
 const { DBHandler, DB } = require("./handler/dbHandler");
 const color = require("colors");
-const { Db } = require("mongodb");
 
 let bot = new Client({
     intents: [
@@ -14,11 +13,16 @@ let bot = new Client({
     ]
 });
 
+bot.prefixs = new Collection()
+bot.commands = new Collection()
+
 bot.login(process.env.TOKEN).then(() => {
     try {
         eventHandler(bot)
         DBHandler()
     } catch (err) {
+        eventHandler(bot)
+        DBHandler()
         console.error(color.red("[ERROR] "), err)
     }
 });

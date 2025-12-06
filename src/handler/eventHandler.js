@@ -13,9 +13,9 @@ function eventHandler(client) {
             const filepath = path.join(eventsFolder, file)
             const event = require(filepath)
             if (event.once) {
-                client.once(event.name, (...args) => event.run(...args))
+                client.once(event.name, (...args) => event.eventrun(client, ...args))
             } else {
-                client.on(event.name, (...args) => event.run(...args));
+                client.on(event.name, (...args) => event.eventrun(client, ...args));
             }
             events+="\n"+file
         }
