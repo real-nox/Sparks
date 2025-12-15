@@ -13,8 +13,8 @@ let bot = new Client({
     ]
 });
 
-bot.prefixs = new Collection()
-bot.commands = new Collection()
+bot.prefixs = new Collection();
+bot.commands = new Collection();
 
 bot.login(process.env.TOKEN).then(() => {
     try {
