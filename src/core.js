@@ -2,9 +2,8 @@ const { Client, GatewayIntentBits, Collection } = require("discord.js");
 const { commandHandler } = require("./handler/commandHandler");
 const { config } = require("dotenv"); config({ quiet: true });
 const { eventHandler } = require("./handler/eventHandler");
-const { Print } = require("./handler/extraHandler");
+const { Print, ErrorLog } = require("./handler/extraHandler");
 const { LoaddDB } = require("./handler/dbHandler");
-const color = require("colors");
 
 let bot = new Client({
     intents: [
@@ -25,5 +24,6 @@ bot.login(process.env.TOKEN).then(() => {
         LoaddDB();
     } catch (err) {
         Print("[ERROR] " + err, "Red");
+        ErrorLog("BOT Launch", err)
     }
 });

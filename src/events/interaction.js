@@ -1,23 +1,24 @@
 const { Client } = require("discord.js");
+const { ErrorLog } = require("../handler/extraHandler");
 
 module.exports = {
     name: "interactionCreate",
 
     /**
-    * @param {import("discord.js").Interaction} interaction
+    * @param {import("discord.js").Interaction} interaction;
     */
-    async eventrun(client = Client, interaction ) {
+    async eventrun(client = Client, interaction) {
         try {
-            const {commandName} = interaction
+            const { commandName } = interaction;
 
             if (interaction.isChatInputCommand()) {
-                const command = client.commands.get(commandName)
+                const command = client.commands.get(commandName);
 
-                command.execute(interaction)
+                command.execute(interaction);
             }
-                } catch (error) {
-                    Print("[ERROR] " + error, "Red")
-
+        } catch (error) {
+            Print("[ERROR] " + error, "Red");
+            ErrorLog("Interaction", error);
         }
     }
 }

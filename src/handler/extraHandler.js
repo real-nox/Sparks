@@ -1,18 +1,33 @@
-const { green, yellow, red, blue } = require("colors")
+const { config } = require("dotenv"); config({ quiet: true })
+const { green, yellow, red, blue } = require("colors");
+const { WebhookClient, EmbedBuilder } = require("discord.js");
 
 function Print(message, type = "Green") {
-    if (type == "Green")
-        console.log(green(message))
-    if (type == "Yellow")
-        console.log(yellow(message))
-    if (type == "Red")
+    try {
+        if (type == "Green")
+            console.log(green(message))
+        if (type == "Yellow")
+            console.log(yellow(message))
+        if (type == "Red")
+            console.log(red(message))
+        if (type == "Blue")
+            console.log(blue(message))
+    } catch (err) {
         console.log(red(message))
-    if (type == "Blue")
-        console.log(blue(message))
+    }
 }
 
-/*function ErrorLog(message) {
-    const webURI = "https://discord.com/api/webhooks/1452352934515048702/FEBfy87QQkMpKqkU88VTGnHMGv6vqzNVPsvx_4P4lTbJ85qWBmgACOCRBs7i2uc1Tnhy"
-}*/
+function ErrorLog(title, message) {
+    try {
+        const webURI = process.env.WEBURL;
+        const ERRwebhook = new WebhookClient({ url: webURI });
 
-module.exports = {Print}
+        const ERRBED = new EmbedBuilder().setTitle(`${title}`).setDescription(`> ${message}`).setColor("Red");
+
+        ERRwebhook.send({ embeds: [ERRBED] });
+    } catch (err) {
+        Print("[ERROR] : " + err, "Red");
+    }
+}
+
+module.exports = { Print, ErrorLog }
