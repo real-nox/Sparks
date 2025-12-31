@@ -14,6 +14,7 @@ let bot = new Client({
     ]
 });
 
+let data;
 bot.prefixs = new Collection();
 bot.commands = new Collection();
 
@@ -21,7 +22,7 @@ bot.login(process.env.TOKEN).then(() => {
     try {
         eventHandler(bot);
         commandHandler(bot);
-        LoaddDB();
+        data = LoaddDB();
     } catch (err) {
         Print("[ERROR] " + err, "Red");
         ErrorLog("BOT Launch", err)

@@ -4,18 +4,16 @@ const { ErrorLog, Print } = require("./extraHandler");
 const { LoadRGL } = require("../data/RGLDB");
 config({ quiet: true });
 
-let DB;
+let DB = createConnection({
+    host: process.env.host,
+    user: process.env.user,
+    port: process.env.port,
+    database: process.env.database,
+    password: process.env.password,
+});
 
 async function LoaddDB() {
     try {
-
-        DB = createConnection({
-            host: process.env.host,
-            user: process.env.user,
-            port: process.env.port,
-            database: process.env.database,
-            password: process.env.password,
-        });
 
         DB.connect(function (err) {
             if (err) throw err;
@@ -23,6 +21,7 @@ async function LoaddDB() {
         });
 
         LoadRGL(DB)
+        return DB;
     } catch (error) {
         Print("[ERROR] " + error, "Red");
         ErrorLog("DATABASE", error);

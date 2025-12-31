@@ -14,7 +14,7 @@ module.exports = {
             const precmd = client.prefixs.get(command) || client.prefixs.find(cmd => cmd.aliases && cmd.aliases.includes(command));
 
             if (!precmd) return;
-            precmd.prerun(mg);
+            precmd.prerun(mg, client);
         } catch (err) {
             Print("[ERROR] " + err, "Red");
             ErrorLog("Message", err);
