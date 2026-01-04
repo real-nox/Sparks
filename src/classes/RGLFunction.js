@@ -1,3 +1,4 @@
+const { EmbedBuilder } = require("discord.js");
 const { gameStart } = require("../data/RGLDB");
 const { delay, Print } = require("../handler/extraHandler");
 
@@ -26,7 +27,7 @@ class RGLGame {
         this.rounds = 3;//
         this.timerRed;
         this.timerGreen;
-        this.winnerC = (!count) ? 3 : count
+        this.winnerC = count ? count : 3
         this.light;
         this.gameon = false;
     }
@@ -102,37 +103,68 @@ class RGLGame {
         if (!losers.has(msg.author.id)) {
             if (!participants.has(msg.author.id)) {
                 participants.set(msg.author.id, 1);
+            } else {
+                let count = participants.get(msg.author.id);
+                participants.set(msg.author.id, count + 1);
             }
-            let count = participants.get(msg.author.id);
-            participants.set(msg.author.id, count++);
         }
     }
 
     WinnersLight() {
-        if (participants.size === 0 && losers.size === 0) 
+
+        if (participants.size === 0 && losers.size === 0)
             return this.mg.channel.send("## 😞 No one participated!");
 
         if (participants.size > 0) {
-            
+            let winnersC = Math.min(participants.size, this.winnerC);
+
+            let participantsArray = [...participants.entries()];
+            participantsArray.sort((a, b) => b[1] - a[1]);
+
+            let medals = ["🥇", "🥈", "🥉"]
+            const EmbedWin = new EmbedBuilder()
+                .setColor("Gold").setTitle("👑 Winners 👑");
+
+            let topwinners = participantsArray.slice(0, winnersC).map(([id, count]) => ({ id, count }));
+
+            topwinners.forEach(({ id, count }, index) => {
+                EmbedWin.addFields({ name: " ", value: `${medals[index]} : <@${id}> | points : ${count}` });
+            });
+
+            for (const { id } of topwinners) participants.delete(id);
+
+            this.mg.channel.send({ embeds: [EmbedWin] });
+            if (participants.size > winnersC) {
+                const EmbedParti = new EmbedBuilder()
+                    .setColor("Green").setTitle("🛡️ Survivors 🛡️");
+
+                let partiMSG = participantsArray.slice(winnersC).map((s, i) => `${i + 1} : <@${s[0]}> | points : ${s[1]}`).join("\n")
+
+                EmbedParti.addFields({ name: "", value: partiMSG });
+
+                this.mg.channel.send({ embeds: [EmbedParti] });
+                participants = [];
+            }
         }
-        this.mg.channel.send("Winners are!!!!")
 
-        participants.forEach((points, participant) => {
-            this.mg.channel.send(`<@${participant}> | points : ${points}`);
-        });
+        if (losers.size > 0) {
+            const EmbedLoser = new EmbedBuilder()
+                .setColor("DarkButNotBlack").setTitle("🪦 Eliminated 🪦")
 
-        losers.forEach((points, loser) => {
-            this.mg.channel.send(`${loser} | ${points}`)
-        })
+            let losersArrayTXT = [...losers.entries()].map((s, i) => `${i + 1} : <@${s[0]}> | points : ${s[1]}`).join("\n")
+            EmbedLoser.addFields({ name: "", value: losersArrayTXT });
+
+            this.mg.channel.send({ embeds: [EmbedLoser] });
+
+            losersArrayTXT = [];
+        }
     }
 
     GameEnd() {
-        //Data to save
-        //clearing maps
+        //To add data saving for winners
 
         losers.clear();
         participants.clear();
-        winners.clear();
 
         Print("[RGL] : ended", "Grey")
     }
