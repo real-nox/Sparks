@@ -11,9 +11,8 @@ const RGL_games =
 const RGL_T =
     `create table if not exists RGL_T(
 	gameID int,
-    participantsID varchar(250) NOT NULL,
+    guildID varchar(250) NOT NULL,
     winners varchar(250) default 0 NOT NULL,
-    defeated varchar(250) default 0 NOT NULL,
     constraint fk_gameID foreign key (gameID) references RGL_games(gameID)
 )`;
 
@@ -31,11 +30,11 @@ async function LoadRGL(DB) {
     }
 }
 
-async function gameStart(data, guildID, channelID) {
+async function gameRStart(data, guildID, channelID) {
     try {
-        const ongame = getGameOngoing(data, guildID, channelID);
+        const ongame = await getRGameOngoing(data, guildID, channelID);
 
-        if (ongame) return console.log("there is no an ongoing game");
+        if (ongame.length == 0) return false;
 
         const [starting] = await data.promise().query(
             `Insert into rgl_games (guildID, channelID, ongoing) values (?,?,?)`,
@@ -51,16 +50,16 @@ async function gameStart(data, guildID, channelID) {
     }
 }
 
-async function gameEnd(data, guildID, channelID) {
+async function gameREnd(data, guildID, channelID) {
     try {
         if (!(guildID && channelID)) return null;
 
-        const ongame = getGameOngoing(data, guildID, channelID);
+        let ongame = await getRGameOngoing(data, guildID, channelID);
 
-        if (ongame) {
+        if (ongame.length > 0) {
 
             let [thegame] = await data.promise().query(
-                `delete from rgl_games where (guildID=? && channelID=? && ongoing = true)`,
+                `update rgl_games set ongoing = false where (guildID=? && channelID=? && ongoing = true)`,
                 [guildID, channelID]
             );
 
@@ -73,7 +72,26 @@ async function gameEnd(data, guildID, channelID) {
     }
 }
 
-async function getGameOngoing(data, guildID, channelID) {
+async function saveRWinners(data, guildID, channelID, winnerID) {
+    try {
+        let [ongame] = await getRGameOngoing(data, guildID, channelID);
+
+        if (ongame) {
+            let [resultat] = await data.promise().query(
+                `insert into rgl_t values(?,?,?)`,
+                [ongame.gameID, guildID, winnerID]
+            )
+
+            if (!resultat) return false;
+            return true;
+        }
+    } catch (err) {
+        Print("[RGLDB] " + err, "Red");
+        ErrorLog("RGLDB", err);
+    }
+}
+
+async function getRGameOngoing(data, guildID, channelID) {
     try {
         if (!(guildID && channelID)) return null;
 
@@ -83,6 +101,26 @@ async function getGameOngoing(data, guildID, channelID) {
         );
 
         if (resultat.length == 0) return false;
+        return resultat;
+    } catch (err) {
+        Print("[RGLDB] " + err, "Red");
+        ErrorLog("RGLDB", err);
+    }
+}
+
+async function deleteRGL(data, guildID, channelID) {
+    try {
+        if (!(guildID && channelID)) return null;
+
+        const [ongame] = await getRGameOngoing(data, guildID, channelID);
+
+        if (!ongame) return false;
+        let [deletion] = await data.promise().query(
+            `delete from rgl_games where gameID = ?`,
+            [ongame.gameID]
+        );
+
+        if (!deletion) return false;
         return true;
     } catch (err) {
         Print("[RGLDB] " + err, "Red");
@@ -90,4 +128,4 @@ async function getGameOngoing(data, guildID, channelID) {
     }
 }
 
-module.exports = { LoadRGL, gameStart, gameEnd, getGameOngoing }
+module.exports = { LoadRGL, gameRStart, saveRWinners, gameREnd, getRGameOngoing, deleteRGL }

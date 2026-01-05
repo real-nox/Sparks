@@ -1,5 +1,5 @@
 const { EmbedBuilder } = require("discord.js");
-const { gameStart } = require("../data/RGLDB");
+const { gameRStart, saveRWinners, gameREnd, deleteRGL } = require("../data/RGLDB");
 const { delay, Print } = require("../handler/extraHandler");
 
 let current = (Math.random() < 0.5) ? "Red" : "Green";
@@ -12,10 +12,11 @@ let participants = new Map();
 let losers = new Map();
 
 let i = 0;
+let listener;
 
 class RGLGame {
 
-    constructor(client, mg, DB, count) {
+    constructor(client, mg, DB, rounds, time, winnersC) {
         this.guildID = mg.guild.id;
         this.channelID = mg.channel.id;
         this.db = DB;
@@ -24,19 +25,26 @@ class RGLGame {
         this.client = client;
 
         //Game Settings
-        this.rounds = 3;//
+        this.rounds = rounds;
+
+        this.time = time;
         this.timerRed;
         this.timerGreen;
-        this.winnerC = count ? count : 3
+
+        this.winnerC = winnersC ? winnersC : 3
         this.light;
         this.gameon = false;
     }
 
     async Starter() {
-        const started = true //await gameStart(this.db, this.guildID, this.channelID);
+        const started = await gameRStart(this.db, this.guildID, this.channelID);
 
-        if (!started)
-            return this.mg.reply("Something unexpected happened");
+        const ErrEmbed = new EmbedBuilder().setColor("Red");
+
+        if (!started) {
+            ErrEmbed.setDescription("```Something unexpected happened```")
+            return this.mg.reply({ embeds: [ErrEmbed] });
+        }
 
         this.mg.reply("## Starting");
         this.gameon = true;
@@ -45,46 +53,53 @@ class RGLGame {
         await this.GameStart();
     }
 
-    async GameStart() {
+    async GameStart(stop = false) {
 
         if (this.gameon == true) {
-            const listener = async (msg) => {
-                if (this.mg.channel.id === msg.channel.id) {
-                    if (msg.author.bot) return;
-                    if (this.light === "Red") {
-                        msg.react("☠️");
-                        this.RedLight(msg);
-                    } else if (this.light === "Green") {
-                        this.GreenLight(msg);
+
+            if (!stop) {
+                listener = async (msg) => {
+                    if (msg.channel.id === this.channelID) {
+                        if (msg.author.bot) return;
+
+                        if (!(msg.content.includes("rgl -end") && this.mg.author == msg.author)) {
+                            if (this.light === "Red") {
+                                msg.react("☠️");
+                                this.RedLight(msg);
+                            } else if (this.light === "Green") {
+                                this.GreenLight(msg);
+                            }
+                        }
+                    }
+                }
+
+                this.client.on("messageCreate", listener);
+
+                for (i = 0; i < this.rounds; i++) {
+
+                    this.light = NEXTLight();
+                    this.mg.channel.send(`## Round ${i + 1}`);
+
+                    await delay(1)
+                    if (this.light == "Red") {
+                        this.mg.channel.send("## :red_circle: RED LIGHT");
+                        this.timerRed = Math.floor(Math.random() * this.time) + 3;
+                        await delay(this.timerRed);
+                    } else {
+                        this.mg.channel.send("## :green_circle: GREEN LIGHT");
+                        this.timerGreen = Math.floor(Math.random() * this.time) + 5;
+                        await delay(this.timerGreen);
                     }
                 }
             }
 
-            this.client.on("messageCreate", listener);
-
-            for (i = 0; i < this.rounds; i++) {
-
-                this.light = NEXTLight();
-                this.timerGreen = Math.floor(Math.random() * 15) + 5;
-                this.timerRed = Math.floor(Math.random() * 9) + 5;
-
-                this.mg.channel.send(`## Round ${i + 1}\nRed Time's set to ${this.timerRed} Green Time's set to ${this.timerGreen} and light is ${this.light}`);
-
-                await delay(1)
-                if (this.light == "Red") {
-                    this.mg.channel.send("## RED LIGHT");
-                    await delay(this.timerRed);
-                } else {
-                    this.mg.channel.send("## GREEN LIGHT");
-                    await delay(this.timerGreen);
-                }
-            }
+            if (stop) i = this.rounds;
 
             if (i == this.rounds) {
-                this.WinnersLight();
+                if (listener) this.client.off("messageCreate", listener);
+                await this.WinnersLight();
                 this.gameon = false;
-                this.client.off("messageCreate", listener)
-                return this.GameEnd()
+                return await this.GameEnd();
             }
         }
     }
@@ -110,10 +125,12 @@ class RGLGame {
         }
     }
 
-    WinnersLight() {
+    async WinnersLight() {
 
-        if (participants.size === 0 && losers.size === 0)
+        if (participants.size === 0 && losers.size === 0) {
+            await deleteRGL(this.db, this.guildID, this.channelID)
             return this.mg.channel.send("## 😞 No one participated!");
+        }
 
         if (participants.size > 0) {
             let winnersC = Math.min(participants.size, this.winnerC);
@@ -127,8 +144,9 @@ class RGLGame {
 
             let topwinners = participantsArray.slice(0, winnersC).map(([id, count]) => ({ id, count }));
 
-            topwinners.forEach(({ id, count }, index) => {
+            topwinners.forEach(async ({ id, count }, index) => {
                 EmbedWin.addFields({ name: " ", value: `${medals[index]} : <@${id}> | points : ${count}` });
+                await saveRWinners(this.db, this.guildID, this.channelID, id);
             });
 
             for (const { id } of topwinners) participants.delete(id);
@@ -160,15 +178,14 @@ class RGLGame {
         }
     }
 
-    GameEnd() {
-        //To add data saving for winners
+    async GameEnd() {
+        await gameREnd(this.db, this.guildID, this.channelID);
 
         losers.clear();
         participants.clear();
 
         Print("[RGL] : ended", "Grey")
     }
-
 }
 
 module.exports = RGLGame
