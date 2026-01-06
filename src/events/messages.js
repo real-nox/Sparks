@@ -14,6 +14,10 @@ module.exports = {
 
             const precmd = client.prefixs.get(command) || client.prefixs.find(cmd => cmd.aliases && cmd.aliases.includes(command));
 
+            if (precmd.admin)
+                if (!mg.member.permissions.has("Administrator"))
+                    return ErrorLog("Permssion", "You're not an admin")
+
             if (!precmd) return;
             precmd.prerun(mg, client);
         } catch (err) {
