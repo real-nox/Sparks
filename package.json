@@ -9,6 +9,7 @@
   "author": "Ranox",
   "license": "ISC",
   "dependencies": {
+    "@2toad/profanity": "^3.2.0",
     "ascii-table": "^0.0.9",
     "colors": "^1.4.0",
     "discord.js": "^14.25.1",

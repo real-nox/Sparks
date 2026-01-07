@@ -2,9 +2,9 @@ const { Client, GatewayIntentBits, Collection } = require("discord.js");
 const { commandHandler } = require("./handler/commandHandler");
 const { config } = require("dotenv"); config({ quiet: true });
 const { eventHandler } = require("./handler/eventHandler");
+const { ErrorLog } = require("./handler/logsHanlder");
 const { Print } = require("./handler/extraHandler");
 const { LoaddDB } = require("./handler/dbHandler");
-const { ErrorLog } = require("./handler/logsHanlder");
 
 let bot = new Client({
     intents: [
@@ -17,6 +17,8 @@ let bot = new Client({
 
 bot.prefixs = new Collection();
 bot.commands = new Collection();
+bot.events = new Collection();
+bot.cooldowns = new Collection();
 
 bot.login(process.env.TOKEN).then(() => {
     try {

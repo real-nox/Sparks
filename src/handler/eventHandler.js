@@ -25,6 +25,7 @@ function eventHandler(client) {
                 } else {
                     client.on(event.name, (...args) => event.eventrun(client, ...args));
                 }
+                client.events.set(event.name, event);
                 table.addRow(file, "Loaded");
             }
         }

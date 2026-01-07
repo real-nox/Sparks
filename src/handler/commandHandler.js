@@ -56,12 +56,12 @@ function commandHandler(client) {
                 const data = await rest.put(Routes.applicationCommands(client.user.id), { body: cmds });
                 Print(`> Successfully reloaded ${data.length} application (/) commands.`, "Green");
             } catch (error) {
-                Print("[ERROR] " + error, "Red");
+                Print("[COMMANDS] " + error, "Red");
                 ErrorLog("COMMANDS", error);
             }
         })()
     } catch (error) {
-        Print("[ERROR] " + error, "Red");
+        Print("[COMMANDS] " + error, "Red");
         ErrorLog("COMMANDS", error);
     }
 }
