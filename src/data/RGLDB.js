@@ -17,20 +17,6 @@ const RGL_T =
     constraint fk_gameID foreign key (gameID) references RGL_games(gameID)
 )`;
 
-async function LoadRGL(DB) {
-    try {
-        await DB.promise().query(RGL_games).then((res) => {
-            if (!res) return Print("[RGLDB] " + err, "Red");
-        });
-        await DB.promise().query(RGL_T).then((res) => {
-            if (!res) return Print("[RGLDB] " + err, "Red");
-        });
-    } catch (err) {
-        Print("[RGLDB] " + err, "Red");
-        ErrorLog("RGLDB", err);
-    }
-}
-
 async function gameRStart(data, guildID, channelID) {
     try {
         const ongame = await getRGameOngoing(data, guildID, channelID);
@@ -129,4 +115,4 @@ async function deleteRGL(data, guildID, channelID) {
     }
 }
 
-module.exports = { LoadRGL, gameRStart, saveRWinners, gameREnd, getRGameOngoing, deleteRGL }
+module.exports = { RGL_games, RGL_T, gameRStart, saveRWinners, gameREnd, getRGameOngoing, deleteRGL }

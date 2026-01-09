@@ -29,6 +29,6 @@ module.exports = {
             staffUpdateEmbed.setTitle("Staff update").setDescription(`- **Old staff role :** <@&${oldStaffR[0].staffRID}>\n- **New staff role :** <@&${roleID}>`);
         }
 
-        mg.channel.send({ embeds: [staffUpdateEmbed] })
+        mg.channel.send({ embeds: [staffUpdateEmbed] });
     },
 }

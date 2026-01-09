@@ -8,21 +8,10 @@ const SERVERT =
     prefix varchar(5) default '!' 
 )`;
 
-async function LoadServer(DB) {
-    try {
-        await DB.promise().query(SERVERT).then((res) => {
-            if (!res) return Print("[RGLDB] " + err, "Red");
-        });
-    } catch (err) {
-        Print("[SERVERDB] " + err, "Red");
-        ErrorLog("SERVERDB", err);
-    }
-}
-
 async function setGuild(DB, guildID) {
     try {
         let [res] = await DB.promise().query(
-            `insert into serverT (guildID) values (${guildID})`
+            `insert into serverT (guildID) values (?)`, [guildID]
         );
 
         if (res) return true;
@@ -38,10 +27,8 @@ async function getGuild(DB, guildID) {
         let [res] = await DB.promise().query(
             `select * from serverT where guildID = ${guildID}`
         );
-
-        if (res.length == 0)
-            return await setGuild(DB, guildID);
-
+        
+        if(!res) return false
         return res;
     } catch (err) {
         Print("[SERVERDB] " + err, "Red");
@@ -117,4 +104,4 @@ async function setStaffR(DB, guildID, staffRID) {
     }
 }
 
-module.exports = { LoadServer, setGuild, getGuild, getPrefix, setPrefix, setStaffR, getStaffR }
+module.exports = { SERVERT, setGuild, getGuild, getPrefix, setPrefix, setStaffR, getStaffR }
