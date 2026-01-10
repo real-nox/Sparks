@@ -16,7 +16,7 @@ module.exports = {
                 if (guild.systemChannel) {
                     const JoinBed = new EmbedBuilder()
                     .setColor("Green")
-                    .setDescription(`Hello thank you for adding **${client.user.username}**!\n- For more info about commands use : \`\`!lscmd\`\`\n- Our website is coming soon.`)
+                    .setDescription(`Hello thank you for adding **${client.user.username}**!\n- For more info about commands use : \`\`!help\`\`\n- Our website is coming soon.`)
                     .setTimestamp()
                     .setFooter({text : `${client.user.username}`});
 

@@ -1,7 +1,7 @@
 const { time, TimestampStyles } = require("discord.js");
 const { getBalC, Earns } = require("../../../data/EconomyDB");
 const { DB } = require("../../../handler/dbHandler");
-const { Print, delay } = require("../../../handler/extraHandler");
+const { Print } = require("../../../handler/extraHandler");
 const { ErrorLog } = require("../../../handler/logsHanlder");
 
 module.exports = {

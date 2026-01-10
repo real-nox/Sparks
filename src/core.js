@@ -15,6 +15,7 @@ let bot = new Client({
     ]
 });
 
+//Bot collections
 bot.prefixs = new Collection();
 bot.commands = new Collection();
 bot.events = new Collection();

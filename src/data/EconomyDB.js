@@ -26,10 +26,9 @@ async function getBalC(DB, userID, guildID) {
             balance = 0,
             earnc = 0,
             dailyc = 0,
-            ecooldown = 0
         } = res[0];
 
-        return { balance, earnc, dailyc, ecooldown };
+        return { balance, earnc, dailyc };
     } catch (error) {
         Print("[Getbal]", error, "Red");
         ErrorLog("Getbal", error);
@@ -59,4 +58,26 @@ async function Earns(DB, userID, guildID, bal, cooldown, found) {
     }
 }
 
-module.exports = { EconomyT, getBalC, Earns }
+//Daily Sparks
+async function Dailys(DB, userID, guildID, bal, cooldown, found) {
+    try {
+        let res;
+
+        if (!found) {
+            return [res] = await DB.promise().query(
+                `insert into EconomyT (userid, guildid, balance, dailyc) values (?,?,?,?)`,
+                [userID, guildID, bal, cooldown]
+            );
+        }
+
+        return [res] = await DB.promise().query(
+            `update economyT set balance = ?, dailyc = ? where (userID = ? and guildid = ?)`,
+            [bal, cooldown, userID, guildID]
+        );
+    } catch (error) {
+        Print("[DAILYSDB] " + error, "Red");
+        ErrorLog("DAILYSDB", error);
+    }
+}
+
+module.exports = { EconomyT, getBalC, Earns, Dailys }
