@@ -1,7 +1,7 @@
 const { getPrefix, getStaffR, ServerC } = require("../data/ServerDB");
 const { ErrorLog } = require("../handler/logsHanlder");
 const { Print } = require("../handler/extraHandler");
-const { EmbedBuilder } = require("discord.js");
+const { EmbedBuilder, time, TimestampStyles } = require("discord.js");
 
 module.exports = {
     name: "messageCreate",
@@ -30,8 +30,10 @@ module.exports = {
             if (precmd.cooldown) {
                 let cooldownUntil = client.cooldowns.get(`${precmd.name}-${mg.author.id}`);
                 if (cooldownUntil && cooldownUntil > Date.now()) {
+                    cooldownUntil = Math.floor(cooldownUntil / 1000)
+
                     const coolembed = new EmbedBuilder()
-                        .setDescription(`Command is on cooldown for ${Math.ceil((cooldownUntil - Date.now()) / 1000)} secs`).setColor("Red");
+                        .setDescription(`Command is on cooldown for ${time(cooldownUntil, TimestampStyles.RelativeTime)}`).setColor("Red");
                     return mg.reply({ embeds: [coolembed] });
                 }
 

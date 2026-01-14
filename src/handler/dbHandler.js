@@ -1,5 +1,4 @@
 const { config } = require("dotenv"); config({ quiet: true });
-const { ErrorLog } = require("./logsHanlder");
 const { Print } = require("./extraHandler");
 const mongoose = require("mongoose");
 

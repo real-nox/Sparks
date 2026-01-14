@@ -45,7 +45,7 @@ module.exports = {
                     return interaction.reply({ embeds: [permbed], flags : MessageFlags.Ephemeral });
                 }
             if (interaction.isChatInputCommand()) {
-                command.execute(interaction);
+                command.execute(interaction, client);
             }
         } catch (error) {
             Print("[ERROR] " + error, "Red");
