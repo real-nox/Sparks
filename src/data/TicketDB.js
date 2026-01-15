@@ -1,4 +1,6 @@
 const { Schema, model } = require("mongoose");
+const { Print } = require("../handler/extraHandler");
+const { ErrorLog } = require("../handler/logsHanlder");
 
 const TicketSC = new Schema({
     guildId: {
@@ -25,4 +27,24 @@ const TicketSC = new Schema({
 
 const TicketS = model("Tickets", TicketSC);
 
-module.exports = { TicketS };
+async function getTCol(DB, guildID) {
+    const TicketR = await DB.findOne({ guildId: guildID });
+
+    if (!TicketR) return false;
+    return TicketR;
+}
+
+async function createTCol(DB, guildID, ticketConfig) {
+    try {
+        let { channel, category, transcription, staff } = ticketConfig;
+
+        let res = await DB.create({ guildId: guildID, channelId: channel.id, categoryId: category.id, transcriptId: transcription.id, staffT: (staff.id || null) })
+        if (res)
+            return true;
+    } catch (error) {
+        Print("[TICKETCreateC] " + error, "Red");
+        ErrorLog("TICKETCreateC", error);
+    }
+}
+
+module.exports = { TicketS, getTCol, createTCol };
