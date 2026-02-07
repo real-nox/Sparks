@@ -1,23 +1,26 @@
 import { ErrorLog } from "../systems/LogSystem.js"
 import { Print } from "../handler/extraHandler.js"
 import { EmbedBuilder, time, TimestampStyles } from "discord.js";
+import ServerDB from "../data/ServerDB.js";
 
 export default {
     name: "messageCreate",
     async eventrun(client, mg) {
         try {
-            if (mg.author.bot) return;
-            if (!mg.guild) return;
+            if (mg.author.bot || !mg.guild) return;
 
-            const data = await getPrefix(ServerC, mg.guild.id);
-            const prefix = data?.prefix || "!";
+            let Server = new ServerDB(mg.guild.id);
 
-            if (!mg.content.startsWith('!') && !mg.content.startsWith(prefix)) return;
+            const guild = await Server.getGuild();
+            const prefix = guild ? guild[0]?.prefix : '!';
 
-            let len = prefix.length;
+            if (!mg.content.startsWith(prefix) && !mg.content.startsWith("!")) return;
 
-            if (mg.content.startsWith('!')) len = 1;
+            let len = prefix.length
 
+            if(mg.content.startsWith("!"))
+                len=1
+            
             const args = mg.content.slice(len).trim().split(/ +/);
             const command = args.shift().toLowerCase();
 
@@ -58,6 +61,7 @@ export default {
                         .setDescription("```You are not a staff to use this command!```").setColor("Red");
                     return mg.reply({ embeds: [permbed] });
                 }
+
 
             precmd.prerun(mg, client);
         } catch (err) {

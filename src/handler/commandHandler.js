@@ -57,7 +57,8 @@ export async function commandHandler(client) {
                 try {
                     const filepath = path.join(`${PREFolder}/${folder}`, file);
 
-                    const pre = await import(pathToFileURL(filepath).href);
+                    const module_pre = await import(pathToFileURL(filepath).href);
+                    const pre = module_pre.default ?? module_pre
 
                     if (pre.prerun || pre.name) {
                         client.prefixs.set(pre.name, pre);

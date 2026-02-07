@@ -4,17 +4,18 @@ import { ErrorLog } from "../systems/LogSystem.js";
 
 export default class ServerDB {
     constructor(guildId) {
-        this.DB = DB
+        this.db = DB
         this.guildId = guildId
     }
 
+    //Guild
     async setGuild() {
         try {
-            const { error } = await this.DB.from("guilds")
-                .insert({ guild_id: guildId });
+            const { error } = await this.db.from("guilds")
+                .insert({ guild_id: this.guildId });
 
             if (error) throw error;
-            
+
             return;
         } catch (err) {
             Print("[SERVERDB] " + err, "Red");
@@ -24,11 +25,11 @@ export default class ServerDB {
 
     async getGuild() {
         try {
-            const { data, error } = await DB.from("guilds")
+            const { data, error } = await this.db.from("guilds")
                 .select()
-                .eq({ guild_id: guildId });
+                .eq("guild_id", this.guildId);
 
-            if (error) throw error;
+            if (error || !data.length) return await this.setGuild();
 
             return data;
         } catch (err) {
@@ -37,44 +38,29 @@ export default class ServerDB {
         }
     }
 
-
-
-
-
-
-
-
-
-
-
-
-    //Prefix change
-    async getPrefix(DB, guildId) {
+    //Prefix
+    async getPrefix() {
         try {
-            await getGuild(DB, guildId)
+            const data = await this.getGuild()
 
-            let result = await DB.findOne(({ guildID: guildId }));
-
-            if (!result) return false;
-            return result.prefix;
+            return data[0]?.prefix;
         } catch (err) {
             Print("[SERVERDB] " + err, "Red");
             ErrorLog("SERVERDB", err);
         }
     }
 
-    async setPrefix(DB, guildId, prefix, found) {
+    async setPrefix(prefix) {
         try {
-            await getGuild(DB, guildId)
+            await this.getPrefix()
 
-            if (!found)
-                return await DB.create({ guildID: guildId, prefix: prefix });
-            else {
-                let Updated = await DB.updateOne({ guildID: guildId }, { $set: { prefix: prefix } });
+            const { error } = await this.db.from("guilds")
+                .update({ prefix: prefix })
+                .eq("guild_id", this.guildId);
 
-                if (!Updated) return false;
-                return true;
-            }
+            if (error) throw error
+
+            return true
         } catch (err) {
             Print("[SERVERDB] " + err, "Red");
             ErrorLog("SERVERDB", err);
@@ -82,28 +68,28 @@ export default class ServerDB {
     }
 
     //Staff
-    async getStaffR(DB, guildId) {
+    async getStaffR() {
         try {
-            await getGuild(DB, guildId);
+            const data = await this.getGuild();
 
-            let result = await DB.findOne({ guildID: guildId });
-
-            if (!result) return false;
-            return result;
+            return data[0]?.staffGuild
         } catch (err) {
             Print("[SERVERDB] " + err, "Red");
             ErrorLog("SERVERDB", err);
         }
     }
 
-    async setStaffR(DB, guildId, staffRID) {
+    async setStaffR(staffRID) {
         try {
-            await getGuild(DB, guildId);
+            await this.getPrefix()
 
-            let Updated = await DB.updateOne({ guildID: guildId }, { $set: { staffRID: staffRID } });
+            const { error } = await this.db.from("guilds")
+                .update({ staffGuild: staffRID })
+                .eq("guild_id", this.guildId);
 
-            if (!Updated) return false;
-            return true;
+            if (error) throw error
+            
+            return true
         } catch (err) {
             Print("[SERVERDB] " + err, "Red");
             ErrorLog("SERVERDB", err);
