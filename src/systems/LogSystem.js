@@ -42,3 +42,14 @@ export function SuggestionLog(user, message) {
         Print("[ERROR] : " + err, "Red");
     }
 }
+
+export function CmdError() {
+    try {
+        return new EmbedBuilder()
+            .setDescription("An error has occurred, please use this command later. Or contact support.")
+            .setColor("Red")
+            .setTimestamp()
+    } catch (err) {
+        Print("[CMDERROR] : " + err, "Red")
+    }
+}

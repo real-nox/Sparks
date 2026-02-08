@@ -1,7 +1,8 @@
-import { Client, MessageFlags, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
+import { MessageFlags, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, TimestampStyles } from "discord.js";
 import { Print } from "../handler/extraHandler.js";
 import { TicketSystem } from "../systems/TicketSystem.js";
 import { ErrorLog } from "../systems/LogSystem.js";
+import ServerDB from "../data/ServerDB.js";
 
 export default {
     name: "interactionCreate",
@@ -17,11 +18,16 @@ export default {
 
                 const command = client.commands.get(commandName);
 
+                let server = new ServerDB(interaction.guildId)
+
                 //Cooldown
                 if (command.cooldown) {
                     let cooldownUntil = client.cooldowns.get(`${command.name}-${interaction.user.id}`);
                     if (cooldownUntil && cooldownUntil > Date.now()) {
-                        return await interaction.reply({ content: `Command is on cooldown for ${Math.ceil((cooldownUntil - Date.now()) / 1000)} secs`, flags: MessageFlags.Ephemeral })
+                        cooldownUntil = Math.floor(cooldownUntil / 1000)
+
+                        const errbed = new EmbedBuilder().setDescription(`Command is on cooldown for ${time(cooldownUntil, TimestampStyles.RelativeTime)}}`).setColor("Red")
+                        return await interaction.reply({ embeds: [errbed], flags: MessageFlags.Ephemeral })
                     }
 
                     client.cooldowns.set(`${command.name}-${interaction.user.id}`, new Date().valueOf() + command.cooldown);
@@ -29,23 +35,31 @@ export default {
 
                 //Owner
                 if (command.owner)
-                    if (interaction.user.id != "432592303450882064") return;
+                    if (interaction.user.id !== process.env.ownerid)
+                        return;
 
                 //Admin
                 if (command.admin)
-                    if (!interaction.member.permissions.has("Administrator")) {
+                    if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
                         const permbed = new EmbedBuilder()
                             .setDescription("```You are not an admin to use this command!```").setColor("Red");
                         return interaction.reply({ embeds: [permbed], flags: MessageFlags.Ephemeral });
                     }
 
                 //Staff
-                if (command.staff)
-                    if (!interaction.member.permissions.has("Administrator") && !interaction.member.permissions.has("ManageMessages") && !interaction.member.roles.cache.has((await getStaffR(DB, interaction.guild.id))[0].staffRID || '0')) {
+                if (command.staff) {
+                    let staffID = await server.getStaffR()
+                    const hasPermission =
+                        interaction.member.permissions.has(PermissionFlagsBits.Administrator) ||
+                        interaction.member.permissions.has(PermissionFlagsBits.ManageMessages) ||
+                        (staffID && interaction.member.roles.cache.has(staffID))
+
+                    if (!hasPermission) {
                         const permbed = new EmbedBuilder()
                             .setDescription("```You are not a staff to use this command!```").setColor("Red");
                         return interaction.reply({ embeds: [permbed], flags: MessageFlags.Ephemeral });
                     }
+                }
 
                 command.execute(interaction, client);
             }

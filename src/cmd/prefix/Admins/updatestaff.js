@@ -1,6 +1,7 @@
 import { EmbedBuilder } from "discord.js"
 import { Print } from "../../../handler/extraHandler.js"
-import { ErrorLog } from "../../../systems/LogSystem.js";
+import { CmdError, ErrorLog } from "../../../systems/LogSystem.js";
+import ServerDB from "../../../data/ServerDB.js";
 
 export default {
     name: "staff-role",
@@ -11,26 +12,40 @@ export default {
             const guild = mg.guild;
             let roleID = (mg.content.split(" "))[1];
 
-            if (!guild.roles.cache.has(roleID))
-                return mg.reply("Unfound role");
+            const staffUpdateEmbed = new EmbedBuilder().setTitle("Staff update").setTimestamp().setFooter({ text: `${guild.name}` })
 
-            let oldStaffR = await getStaffR(ServerC, guild.id);
-            let setStaff = await setStaffR(ServerC, guild.id, roleID);
-
-            if (!setStaff)
-                return mg.reply("Something went wrong, please use this command later.");
-
-            const staffUpdateEmbed = new EmbedBuilder().setTimestamp().setFooter({ text: `${guild.name}` }).setColor("Aqua");
-
-            if (!oldStaffR) {
-                staffUpdateEmbed.setDescription(`Staff has been set to <@&${setStaffR}>`);
-            } else if (oldStaffR[0].staffRID == roleID) {
-                staffUpdateEmbed.setDescription(`Cannot update role, it's already been updated with the same ID`).setColor("Red");
-            } else {
-                staffUpdateEmbed.setTitle("Staff update").setDescription(`- **Old staff role :** <@&${oldStaffR[0].staffRID}>\n- **New staff role :** <@&${roleID}>`);
+            if (!guild.roles.cache.has(roleID)) {
+                staffUpdateEmbed.setDescription("Unfound role! Use an exisiting roleid!").setColor("Red")
+                return mg.reply({ embeds: [staffUpdateEmbed] });
             }
 
-            mg.channel.send({ embeds: [staffUpdateEmbed] });
+            let server = new ServerDB(guild.id)
+
+            let oldStaffR = await server.getStaffR();
+
+            if (!oldStaffR) {
+                await update()
+
+                staffUpdateEmbed.setDescription(`Staff has been set to <@&${roleID}>`).setColor("Aqua");
+                return mg.channel.send({ embeds: [staffUpdateEmbed] })
+            }
+
+            if (oldStaffR === roleID) {
+                staffUpdateEmbed.setDescription("- Cannot update role, it's already been updated with the same ID.\n> Use a new role ID").setColor("Red")
+                return mg.reply({ embeds: [staffUpdateEmbed] });
+            }
+
+            await update()
+            staffUpdateEmbed.setColor("Aqua").setDescription(`- **Old staff role :** <@&${oldStaffR}>\n- **New staff role :** <@&${roleID}>`);
+
+            return mg.channel.send({ embeds: [staffUpdateEmbed] });
+
+            async function update() {
+                let setStaff = await server.setStaffR(roleID);
+
+                if (!setStaff)
+                    return mg.reply({ embeds: [CmdError()] });
+            }
         } catch (error) {
             Print("[STAFFCHANGE] " + error, "Red");
             ErrorLog("STAFFCHANGE", error);

@@ -13,18 +13,16 @@ export default {
 
             let resultat = await server.getGuild(DB, guildID);
 
-            if (resultat.length == 0) {
+            if (!resultat.length) {
                 if (guild.systemChannel) {
                     const JoinBed = new EmbedBuilder()
-                    .setColor("Green")
-                    .setDescription(`Hello thank you for adding **${client.user.username}**!\n- For more info about commands use : \`\`!help\`\`\n- Our website is coming soon.`)
-                    .setTimestamp()
-                    .setFooter({text : `${client.user.username}`});
+                        .setColor("Green")
+                        .setDescription(`Hello thank you for adding **${client.user.username}**!\n- For more info about commands use : \`\`!help\`\`\n- Our website is coming soon.`)
+                        .setTimestamp()
+                        .setFooter({ text: `${client.user.username}` });
 
-                    guild.systemChannel.send({embeds : [JoinBed]});
+                    guild.systemChannel.send({ embeds: [JoinBed] });
                 }
-
-                await server.setGuild(DB, guild.id);
             }
         } catch (err) {
             Print("[ERROR] " + err, "Red");
