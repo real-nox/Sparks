@@ -1,6 +1,7 @@
 import { EmbedBuilder } from "discord.js";
 import { delay, Print } from "../handler/extraHandler.js";
 import { ErrorLog, EventLog } from "./LogSystem.js";
+import Mini_GamesDB from "../data/Mini_GamesDB.js";
 
 export default class RGLGame {
 
@@ -8,6 +9,7 @@ export default class RGLGame {
         this.guildID = mg.guild.id;
         this.channelID = mg.channel.id;
         this.mg = mg;
+        this.db = new Mini_GamesDB(this.guildID, this.channelID, "RGL")
 
         this.client = client;
 
@@ -35,7 +37,7 @@ export default class RGLGame {
 
     async Starter() {
         try {
-            const started = await gameRStart(RGLGames, this.guildID, this.channelID);
+            const started = await this.db.setGame();
 
             const ErrEmbed = new EmbedBuilder().setColor("Red");
 
@@ -44,7 +46,7 @@ export default class RGLGame {
                 return this.mg.reply({ embeds: [ErrEmbed] });
             }
 
-            this.mg.reply("## Starting");
+            this.mg.reply("## Starting RGL");
             this.gameon = true;
             Print("[RGL] : Startup", "Green");
 
@@ -55,6 +57,7 @@ export default class RGLGame {
         } catch (error) {
             Print("[RGLC] " + error, "Red");
             ErrorLog("RGLC", error);
+            await this.db.deleteGame()
         }
     }
 
@@ -64,12 +67,13 @@ export default class RGLGame {
 
             this.MessageHandler();
             await delay(1);
-            await this.rounds();
+            await this.Rounds();
 
             await this.FinishGame(stop);
         } catch (error) {
             Print("[RGLC] " + error, "Red");
             ErrorLog("RGLC", error);
+            await this.db.deleteGame()
         }
     }
 
@@ -180,7 +184,7 @@ export default class RGLGame {
         try {
             if (!this.list) {
                 if (this.participants.size === 0 && this.losers.size === 0) {
-                    await deleteRGL(RGLGames, this.guildID, this.channelID)
+                    await this.db.deleteGame()
                     return this.mg.channel.send("## 😞 No one participated!");
                 }
             }
@@ -200,7 +204,7 @@ export default class RGLGame {
 
                     topwinners.forEach(async ({ id, count }, index) => {
                         EmbedWin.addFields({ name: " ", value: `${medals[index]} : <@${id}> \`${count}\`` });
-                        await saveRWinners(RGLC, this.guildID, this.channelID, id);
+                        await this.db.addGameWinner({ id: id });
                     });
 
                     for (const { id } of topwinners) this.participants.delete(id);
@@ -222,6 +226,8 @@ export default class RGLGame {
             }
 
             if (this.losers.size > 0) {
+                if (this.participants.size === 0)
+                    await this.db.deleteGame()
                 const EmbedLoser = new EmbedBuilder()
                     .setColor("DarkButNotBlack").setTitle("🪦 Eliminated 🪦")
 
@@ -248,7 +254,7 @@ export default class RGLGame {
 
             await this.WinnersLight();
 
-            await gameREnd(RGLGames, this.guildID, this.channelID);
+            await this.db.endGame();
 
             if (this.losers.size > 0) this.losers.clear();
             if (this.participants.size > 0) this.participants.clear();

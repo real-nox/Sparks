@@ -2,6 +2,7 @@ import { Print } from "../../../handler/extraHandler.js";
 import RGLGame from "../../../systems/RGLFunction.js";
 import { EmbedBuilder } from "discord.js";
 import { ErrorLog } from "../../../systems/LogSystem.js";
+import Mini_GamesDB from "../../../data/Mini_GamesDB.js";
 
 let RGL;
 
@@ -23,22 +24,26 @@ export default {
                 return mg.reply({ embeds: [ErrEmbed] });
             }
 
-            cmdType = cmdType.includes("-", 0) ? cmdType = cmdType.slice(1) : cmdType;
+            cmdType = cmdType.includes(" ", 0) ? cmdType = cmdType.slice(1) : cmdType;
 
-            let Game = await getRGameOngoing(RGLGames, guildID, channelID);
+            let RGLdb = new Mini_GamesDB(guildID, channelID, "RGL")
+            let Game = await RGLdb.getOngoingGame();
 
             switch (cmdType) {
                 case "start":
                 case "s":
-                    let RGLConfig = { 
-                        rounds : parseInt(args[2]), 
-                        time : parseInt(args[3]), 
-                        winnersC : parseInt(args[4])
+                    let RGLConfig = {
+                        rounds: parseInt(args[2]),
+                        time: parseInt(args[3]),
+                        winnersC: parseInt(args[4])
                     }
 
                     if (Game) return mg.reply("# There is an ongoing game!");
 
-                    if ((!RGLConfig.rounds || !RGLConfig.time) || ((RGLConfig.rounds > 20 || RGLConfig.rounds < 2) || (RGLConfig.time > 60 || RGLConfig.time < 10) || (RGLConfig.winnersC > 3 || RGLConfig.winnersC < 1))) {
+                    if (
+                        (!RGLConfig.rounds || !RGLConfig.time) ||
+                        ((RGLConfig.rounds > 20 || RGLConfig.rounds < 2) || (RGLConfig.time > 60 || RGLConfig.time < 10) || (RGLConfig.winnersC > 3 || RGLConfig.winnersC < 1))) {
+
                         ErrEmbed.setDescription("```Command format is incorrect !rgl -start <rounds> <duration in sec> <(winners) optional 3 by default>```");
                         return mg.reply({ embeds: [ErrEmbed] });
                     }
@@ -58,7 +63,7 @@ export default {
                     if (RGL)
                         await RGL.GameStart(true);
                     else
-                        await deleteRGL(RGLGames, guildID, channelID);
+                        await RGLdb.endGame();
                     break;
 
                 default:
