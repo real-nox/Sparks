@@ -88,7 +88,36 @@ export default class ServerDB {
                 .eq("guild_id", this.guildId);
 
             if (error) throw error
-            
+
+            return true
+        } catch (err) {
+            Print("[SERVERDB] " + err, "Red");
+            ErrorLog("SERVERDB", err);
+        }
+    }
+
+    //Ticket staff
+    async getTStaffR() {
+        try {
+            const data = await this.getGuild();
+
+            return data[0]?.staffT_id
+        } catch (err) {
+            Print("[SERVERDB] " + err, "Red");
+            ErrorLog("SERVERDB", err);
+        }
+    }
+
+    async setTStaffR(staffRID) {
+        try {
+            await this.getPrefix()
+
+            const { error } = await this.db.from("guilds")
+                .update({ staffT_id: staffRID })
+                .eq("guild_id", this.guildId);
+
+            if (error) throw error
+
             return true
         } catch (err) {
             Print("[SERVERDB] " + err, "Red");

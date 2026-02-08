@@ -1,8 +1,9 @@
-import { MessageFlags, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, TimestampStyles } from "discord.js";
+import { MessageFlags, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, TimestampStyles, time, ModalBuilder, LabelBuilder, TextInputBuilder, TextInputStyle } from "discord.js";
 import { Print } from "../handler/extraHandler.js";
 import { TicketSystem } from "../systems/TicketSystem.js";
 import { ErrorLog } from "../systems/LogSystem.js";
 import ServerDB from "../data/ServerDB.js";
+import { updateUTicket } from "../data/TicketDB.js";
 
 export default {
     name: "interactionCreate",
@@ -72,27 +73,32 @@ export default {
                     await TicketC.openT();
                 }
 
+                if (interaction.customId === `claimT-${interaction.channel.id}-${interaction.member.user.id}`) {
+                    await new TicketSystem(interaction, client).claimT()
+                }
+
                 if (interaction.customId === `closeT-${interaction.channel.id}-${interaction.member.user.id}`) {
+                    await new TicketSystem(interaction, client).closeT()
                     await interaction.message.edit({ components: [] })
 
                     const close = new ButtonBuilder()
-                        .setLabel("Close")
-                        .setCustomId(`Tclose-${interaction.channel.id}-${interaction.member.user.id}`)
+                        .setLabel("Delete")
+                        .setCustomId(`deleteT-${interaction.channel.id}-${interaction.member.user.id}`)
                         .setStyle(ButtonStyle.Danger)
 
                     const cancel = new ButtonBuilder()
-                        .setLabel("Cancel")
-                        .setCustomId(`cancelT-${interaction.channel.id}-${interaction.member.user.id}`)
+                        .setLabel("Reopen")
+                        .setCustomId(`reopenT-${interaction.channel.id}-${interaction.member.user.id}`)
                         .setStyle(ButtonStyle.Secondary)
 
                     await interaction.message.reply({
-                        embeds: [new EmbedBuilder().setDescription("Are you sure you want to close this ticket?")],
+                        embeds: [new EmbedBuilder().setDescription("Want to delete this ticket or reopen it?")],
                         components: [new ActionRowBuilder().setComponents(close, cancel)]
                     })
                 }
 
-                if (interaction.customId === `cancelT-${interaction.channel.id}-${interaction.member.user.id}`) {
-                    console.log(interaction.message)
+                if (interaction.customId === `reopenT-${interaction.channel.id}-${interaction.member.user.id}`) {
+                    await new TicketSystem(interaction, client).reopenT()
                     const messageold = interaction.channel.messages.fetch(interaction.message.reference.messageId)
 
                     const closeBtn = new ButtonBuilder()
@@ -109,17 +115,36 @@ export default {
 
                     (await messageold).edit({ components: [new ActionRowBuilder().setComponents(closeBtn, claimBtn)] })
                     await interaction.message.delete()
+                    return await interaction.reply({ content: "Reopened the ticket!", flags: MessageFlags.Ephemeral })
                 }
 
-                if (interaction.customId === `claimT-${interaction.channel.id}-${interaction.member.user.id}`) {
-                    await new TicketSystem(interaction, client).claimT()
-                }
+                if (interaction.customId === `deleteT-${interaction.channel.id}-${interaction.member.user.id}`) {
+                    const modal = new ModalBuilder()
+                        .setCustomId(`closing-${interaction.channel.id}-${interaction.member.user.id}`)
+                        .setTitle("Ticket Deletion Reason")
+                        .addLabelComponents(new LabelBuilder()
+                            .setLabel("Provide the reason of ticket deletion.")
+                            .setTextInputComponent(new TextInputBuilder()
+                                .setCustomId("reason")
+                                .setStyle(TextInputStyle.Paragraph)
+                            )
+                        )
 
-                if (interaction.customId === `Tclose-${interaction.channel.id}-${interaction.member.user.id}`) {
-
+                    await interaction.showModal(modal)
                 }
 
             }
+
+            if (interaction.isModalSubmit()) {
+                if (interaction.customId === `closing-${interaction.channel.id}-${interaction.member.user.id}`) {
+                    await interaction.message.edit({ components: [] })
+                    const reason = interaction.fields.getTextInputValue("reason")
+
+                    await interaction.reply("Closing ticket...")
+                    await new TicketSystem(interaction, client).deleteT(reason)
+                }
+            }
+
         } catch (error) {
             Print("[ERROR] " + error, "Red");
             ErrorLog("Interaction", error);

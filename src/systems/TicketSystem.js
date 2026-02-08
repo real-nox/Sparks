@@ -1,6 +1,8 @@
 import { EmbedBuilder, ChannelType, ButtonBuilder, ButtonStyle, ActionRowBuilder, MessageFlags, PermissionFlagsBits } from "discord.js";
 import { Print } from "../handler/extraHandler.js";
 import { ErrorLog } from "./LogSystem.js";
+import { addUTicket, createTCol, getTCol, getUTicket, getUTicketByChannel, updateTicket, updateUTicket } from "../data/TicketDB.js";
+import ServerDB from "../data/ServerDB.js";
 
 export class TicketSystem {
     constructor(interaction, client) {
@@ -9,6 +11,7 @@ export class TicketSystem {
 
         this.guild = interaction.guild;
         this.staffID = null;
+        this.ticketSInfo = null
     }
 
     //Creation of ticket
@@ -17,7 +20,7 @@ export class TicketSystem {
             let { title, text, channel, category, transcription, btitle, bcolor, staff } = ticketConfig;
             if (title && text && channel) {
 
-                if (!await getTCol(TicketS, this.guild.id)) {
+                if (!await getTCol(this.guild.id)) {
                     //Defining new replacements which will be described in docs later
                     text = text.replace('$n', '\n')
 
@@ -67,7 +70,7 @@ export class TicketSystem {
                     };
 
                     ticketConfig = { channel, category, transcription, staff };
-                    let creationD = await createTCol(TicketS, this.guild.id, ticketConfig);
+                    let creationD = await createTCol(this.guild.id, ticketConfig);
 
                     if (creationD) {
                         const ctEmbed = new EmbedBuilder()
@@ -92,16 +95,30 @@ export class TicketSystem {
 
     async openT() {
         try {
-            //Assumming that user have never opened the ticket
-            const ticketSInfo = await getTCol(TicketS, this.guild.id);
+            const ticketSInfo = await getTCol(this.guild.id);
 
-            let categoryT = await this.interaction.guild.channels.cache.find(c => c.id === ticketSInfo.categoryId);
+            if (!ticketSInfo)
+                return await this.interaction.reply({ content: "Server's Ticket is unfound/not setup anymore.", flags: MessageFlags.Ephemeral })
+
+            const hasTicket = await getUTicket(this.interaction.guild.id, this.interaction.user.id)
+
+            if (hasTicket) {
+                if (this.interaction.guild.channels.cache.get(hasTicket[0]?.id_channel))
+                    return await this.interaction.reply({ content: "You currently have an open ticket.", flags: MessageFlags.Ephemeral })
+                else
+                    await updateUTicket(this.interaction.guild.id, this.interaction.user.id, "status", "closed")
+            }
+
+            let categoryT = await this.interaction.guild.channels.cache.get(ticketSInfo.T_category_id);
 
             if (!categoryT) {
                 categoryT = await this.interaction.guild.channels.create({ name: "Tickets", type: ChannelType.GuildCategory })
+                await updateTicket(this.interaction.guild.id, "T_category_id", categoryT.id)
             }
 
             await this.interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+            let T_staff = await new ServerDB(this.guild.id).getTStaffR()
 
             const TicketChannelU = await this.interaction.guild.channels.create({
                 parent: categoryT,
@@ -113,7 +130,7 @@ export class TicketSystem {
                         deny: [PermissionFlagsBits.ViewChannel]
                     },
                     {
-                        id: (!ticketSInfo.staff ? this.interaction.member : ticketSInfo.staff),
+                        id: (this.guild.roles.cache.get(T_staff) ? T_staff : this.interaction.member),
                         allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory]
                     },
                     {
@@ -143,7 +160,14 @@ export class TicketSystem {
 
             const row = new ActionRowBuilder().addComponents(closeBtn, claimBtn)
 
-            await TicketChannelU.send({ content: `${await this.interaction.member}`, embeds: [ticketembed], components: [row] })
+            let ticketConfig = {
+                guild_id: this.interaction.guild.id,
+                userId: this.interaction.user.id,
+                channelid: TicketChannelU.id
+            }
+
+            await addUTicket(ticketConfig)
+            return await TicketChannelU.send({ content: `${await this.interaction.member}`, embeds: [ticketembed], components: [row] })
         } catch (error) {
             Print("[TICKETOpenC] " + error, "Red");
             ErrorLog("TICKETOpenC", error);
@@ -152,43 +176,99 @@ export class TicketSystem {
 
     async closeT() {
         try {
-            await this.interaction.reply("Closing")
+            const info = await getUTicketByChannel(this.guild.id, this.interaction.channel.id);
 
-
+            return await this.interaction.channel.permissionOverwrites.edit(info.user_id, { ViewChannel: false })
         } catch (error) {
             Print("[CLOSET] " + error, "Red");
             ErrorLog("CLOSET", error);
         }
     }
 
+    async reopenT() {
+        try {
+            const info = await getUTicketByChannel(this.guild.id, this.interaction.channel.id);
+
+            return await this.interaction.channel.permissionOverwrites.edit(info.user_id, { ViewChannel: true })
+        } catch (error) {
+            Print("[REOPEN] " + error, "Red");
+            ErrorLog("REOPEN", error);
+        }
+    }
+
     async claimT() {
         try {
-            const foundDB = await getTCol(TicketS, this.guild.id)
-            const foundRole = foundDB.staffT
+            let T_staff = await new ServerDB(this.guild.id).getTStaffR()
 
-            this.staffID = this.staffID !== null ? this.staffID : foundRole
+            if (!this.guild.roles.cache.get(T_staff) && !this.interaction.member.permissions.has(PermissionFlagsBits.Administrator || PermissionFlagsBits.ManageMessages))
+                return await this.interaction.reply({ content: "The staff ticket role is unknown!", flags: MessageFlags.Ephemeral })
 
-            const haspermission = this.interaction.member.roles.cache.has(this.staffID)
+            const haspermission = this.interaction.member.roles.cache.has(T_staff) ||
+                this.interaction.member.permissions.has(PermissionFlagsBits.Administrator || PermissionFlagsBits.ManageMessages)
 
-            if (!haspermission) {
-                await this.interaction.reply({ content: "You aren't a staff to claim this ticket!", flags: MessageFlags.Ephemeral })
-                return
-            }
+            const ticketSInfo = await getUTicketByChannel(this.guild.id, this.interaction.channel.id);
+
+            if (this.interaction.user.id === ticketSInfo.user_id)
+                return await this.interaction.reply({ content: "You cannot claim your own ticket!", flags: MessageFlags.Ephemeral })
+
+            if (!haspermission)
+                return await this.interaction.reply({ content: "You aren't a staff to claim this ticket!", flags: MessageFlags.Ephemeral })
+
+
+            if (ticketSInfo.claimed)
+                return await this.interaction.reply({ content: `This ticket has already been claimed by <@${ticketSInfo.claimed}>!`, flags: MessageFlags.Ephemeral })
+
+            await updateUTicket(this.guild.id, ticketSInfo.user_id, "claimed", this.interaction.user.id)
+            return await this.interaction.reply({ content: `Ticket is claimed by ${this.interaction.user}` })
         } catch (error) {
             Print("[CLAIM] " + error, "Red");
             ErrorLog("CLAIM", error);
         }
     }
 
-    async deleteT() {
-        try { } catch (error) {
+    async deleteT(reason) {
+        try {
+            let ticketSInfo = await getUTicketByChannel(this.interaction.guild.id, this.interaction.channel.id);
+
+            await updateUTicket(ticketSInfo.guild_id, ticketSInfo.user_id, "reason", reason)
+            setTimeout(async () => {
+                try {
+                    await this.transcriptT(this.interaction.user)
+                    return await this.interaction.channel.delete()
+                } catch (error) {
+                    Print("[DELETET] " + error, "Red");
+                    ErrorLog("DELETET", error);
+                }
+            }, 5000)
+        } catch (error) {
             Print("[DELETET] " + error, "Red");
             ErrorLog("DELETET", error);
         }
     }
 
-    async transcriptT() {
-        try { } catch (error) {
+    async transcriptT(closed) {
+        try {
+            console.log(this.interaction.channel.id)
+            let ticketSInfo = await getUTicketByChannel(this.interaction.guild.id, this.interaction.channel.id);
+            const ticketS = await getTCol(this.guild.id);
+
+            await updateUTicket(ticketSInfo.guild_id, ticketSInfo.user_id, "status", "closed")
+
+            let { id_ticket, id_channel, user_id, created_at, claimed, status, guild_id, reason } = ticketSInfo
+
+            const transcEmbed = new EmbedBuilder()
+                .setTitle("Ticket Closed")
+                .setFields(
+                    { name: "Ticket ID", value: `${id_ticket}`, inline: true },
+                    { name: "Opened By", value: `<@${user_id}>`, inline: true },
+                    { name: "Closed By", value: `${closed}`, inline: true },
+                    { name: "Reason", value: `${reason}` || "No reason provided", inline: true },
+                    { name: "Open Time", value: `<t:${Math.floor(new Date(created_at).getTime() / 1000)}:F>`, inline: true },
+                    { name: "Claimed By", value: claimed ? `<@${claimed}>` : "No one" }
+                ).setTimestamp().setColor("DarkGold")
+
+            return await this.interaction.guild.channels.cache.get(ticketS.T_transcription_id).send({ embeds: [transcEmbed] })
+        } catch (error) {
             Print("[TRANSCRIPTIONT] " + error, "Red");
             ErrorLog("TRANSCRIPTIONT", error);
         }

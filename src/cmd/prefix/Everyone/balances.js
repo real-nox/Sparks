@@ -20,7 +20,7 @@ export default {
                 try {
                     member = await mg.guild.members.fetch(args[1]);
                 } catch (error) {
-                    if (error.code === 10007) {
+                    if (error.code === 10007 || error.code === 10013) {
                         const balembed = new EmbedBuilder()
                             .setDescription(`I cannot find this user in this server.`).setColor("Red");
                         return mg.reply({ embeds: [balembed] });
