@@ -1,35 +1,37 @@
-import { time, TimestampStyles } from "discord.js";
+import { EmbedBuilder, time, TimestampStyles } from "discord.js";
 import { Print } from "../../../handler/extraHandler.js";
-import { ErrorLog } from "../../../systems/LogSystem.js";
+import { CmdError, ErrorLog } from "../../../systems/LogSystem.js";
+import Economy from "../../../data/EconomyDB.js";
 
+const max_coins = process.env.max_coins
 export default {
     name: "earns",
-    cooldown: 2000,
+    cooldown: 4000,
     async prerun(mg) {
         try {
-            let userID = mg.author.id;
-            let guildID = mg.guild.id;
+            const balance = 50
+            const userID = mg.author.id;
+            const guildID = mg.guild.id;
 
-            let addedS;
-            let userECO = await getBalC(EcoC, userID, guildID);
-            let cooldown = 60000 + Date.now();
-            let balance = 50;
+            let economy = new Economy(userID, guildID)
+            let userECO = await economy.getUserEco()
 
-            if (!userECO) {
-                addedS = await Earns(EcoC, userID, guildID, balance, cooldown, false);
-                if (addedS)
-                    return mg.reply(`Added ${balance} sparks to your balance!`);
+            const earnEmbed = new EmbedBuilder().setTimestamp()
+
+            if (userECO[0]?.balance >= max_coins) {
+                earnEmbed.setDescription("You have reached the maximum amount of sparks").setColor("DarkRed")
+                return mg.reply({ embeds: [earnEmbed] })
             }
 
-            if (userECO.balance == 100000) {
-                return mg.reply("You have reached the maximum amount of sparks");
-            }
+            let earnCooldown = userECO[0].earnc;
+            const cooldown = parseInt(process.env.earnc) + Date.now();
 
-            if (userECO.earnc && userECO.earnc > Date.now()) {
-                const remaining = userECO.earnc - Date.now();
-                const remainingT = Math.floor(userECO.earnc / 1000);
+            if (earnCooldown && earnCooldown > Date.now()) {
+                const remaining = earnCooldown - Date.now();
+                const remainingT = Math.floor(earnCooldown / 1000);
 
-                return await mg.reply(`You have to wait for ${time(remainingT, TimestampStyles.RelativeTime)}`)
+                earnEmbed.setDescription(`You have to wait for ${time(remainingT, TimestampStyles.RelativeTime)}`).setColor("Red")
+                return await mg.reply({ embeds : [earnEmbed] })
                     .then(async (msg) => {
                         setTimeout(async () => {
                             try {
@@ -41,13 +43,14 @@ export default {
                     }).catch(console.error);
             }
 
-            userECO.balance += balance;
-            console.log(userECO.balance)
-            addedS = await Earns(EcoC, userID, guildID, userECO.balance, cooldown, true);
+            userECO[0].balance += balance;
+            let resultat = await economy.setSparks(userECO[0].balance, "earnc", cooldown);
 
-            if (addedS) {
-                return mg.reply(`Added ${balance} sparks to your balance!`);
-            }
+            if (!resultat)
+                return msg.reply({ embeds: [CmdError()] });
+
+            earnEmbed.setDescription(`Added \`${balance}\` sparks to your balance!`)
+            return mg.reply({ embeds: [earnEmbed] });
         } catch (error) {
             Print("[Earnscmd] " + error, "Red");
             ErrorLog("Earnscmd", error);

@@ -1,41 +1,52 @@
 import { EmbedBuilder, TimestampStyles, time } from "discord.js";
 import { Print } from "../../../handler/extraHandler.js"
 import { ErrorLog } from "../../../systems/LogSystem.js";
+import Economy from "../../../data/EconomyDB.js";
 
 export default {
     name: "coinflip",
     cooldown: 2000,
     async prerun(mg) {
         try {
-            let userID = mg.author.id;
-            let guildID = mg.guild.id;
-
-            let cooldown = 600000 + Date.now();
+            const userID = mg.author.id;
+            const guildID = mg.guild.id;
 
             let price = parseInt((mg.content.split(" "))[1]);
 
-            if (!price)
-                return mg.reply("Set your price between 50 and 2000 sparks");
+            const cfEmbed = new EmbedBuilder().setTimestamp()
 
-            let userECO = await getBalC(EcoC, userID, guildID);
+            let economy = new Economy(userID, guildID)
+            let userECO = await economy.getUserEco();
 
-            if (!userECO)
-                return mg.reply("you have nothing..");
+            if (!price) {
+                cfEmbed.setDescription("Set your price between `50` and `2000` sparks.").setColor("DarkRed")
+                return mg.reply({ embeds: [cfEmbed] });
+            }
 
-            if (price > 2000 || price < 50)
-                return mg.reply("You must put your price between 50 and 2000 sparks");
+            if (price > 2000 || price < 50) {
+                cfEmbed.setDescription("You must put your price between `50` and `2000` sparks.").setColor("DarkRed")
+                return mg.reply({ embeds: [cfEmbed] });
+            }
 
-            if (userECO && userECO.balance == 100000)
-                return mg.reply("You are rich to use this command");
+            if (!userECO[0]?.balance || (userECO[0] && userECO[0]?.balance < price)) {
+                cfEmbed.setDescription("You don't have enough sparks for this bid.").setColor("DarkRed")
+                return mg.reply({ embeds: [cfEmbed] });
+            }
 
-            if (userECO && userECO.balance < price)
-                return mg.reply("You don't have enough sparks for this bid");
+            if (userECO[0]?.balance >= max_coins) {
+                cfEmbed.setDescription("You have reached the maximum amount of sparks").setColor("DarkRed")
+                return mg.reply({ embeds: [cfEmbed] })
+            }
 
-            if (userECO.coinfc && userECO.coinfc > Date.now()) {
-                let remaining = userECO.coinfc - Date.now();
-                let remainingT = Math.floor(userECO.coinfc / 1000);
+            let cfCooldown = userECO[0].flipc
+            let cooldown = parseInt(process.env.flipc) + Date.now();
 
-                return mg.reply(`wait for ${time(remainingT, TimestampStyles.RelativeTime)}`)
+            if (cfCooldown && cfCooldown > Date.now()) {
+                let remaining = cfCooldown - Date.now();
+                let remainingT = Math.floor(cfCooldown / 1000);
+
+                cfEmbed.setDescription(`You have to wait for ${time(remainingT, TimestampStyles.RelativeTime)}`).setColor("Red")
+                return mg.reply({ embeds: [cfEmbed] })
                     .then(async (msg) => {
                         setTimeout(async () => {
                             try {
@@ -46,26 +57,28 @@ export default {
                         }, remaining);
                     });
             }
+
             let luck = Math.floor(Math.random() * 100)
             let bal;
             let des;
-            const cfembed = new EmbedBuilder()
 
             if (luck > 50) {
                 bal = userECO.balance + price;
-                des = `Lucky ${price} has been added to your balance`;
-                cfembed.setColor("Yellow");
+                des = `Lucky \`${price}\` has been added to your balance`;
+                cfEmbed.setColor("DarkGreen");
             } else {
                 bal = userECO.balance - price;
                 des = `unlucky ${price} has been removed from your balance`;
-                cfembed.setColor("DarkRed");
+                cfEmbed.setColor("DarkRed");
 
             }
-            let res = await Coinflips(EcoC, userID, guildID, bal, cooldown)
+            let resultat = await economy.setSparks(bal, "flipc", cooldown)
 
-            if (res)
-                cfembed.setDescription(`${des}`)
-            return mg.reply({ embeds: [cfembed] })
+            if (!resultat)
+                return msg.reply({ embeds: [CmdError()] });
+
+            cfEmbed.setDescription(`${des}`)
+            return mg.reply({ embeds: [cfEmbed] })
         } catch (error) {
             Print("[CFcmd] " + error, "Red");
             ErrorLog("CFcmd", error);

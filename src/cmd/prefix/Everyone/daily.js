@@ -1,36 +1,37 @@
-import { time, TimestampStyles } from "discord.js"
+import { EmbedBuilder, time, TimestampStyles } from "discord.js"
 import { Print } from "../../../handler/extraHandler.js"
-import { ErrorLog } from "../../../systems/LogSystem.js";
+import { CmdError, ErrorLog } from "../../../systems/LogSystem.js";
+import Economy from "../../../data/EconomyDB.js";
 
+const max_coins = process.env.max_coins
 export default {
     name: "dailys",
-    cooldown: 2000,
+    cooldown: 4000,
     async prerun(mg) {
         try {
-            let userID = mg.author.id;
-            let guildID = mg.guild.id;
+            const userID = mg.author.id;
+            const guildID = mg.guild.id;
+            const bal = 100
 
-            let addedS;
-            let userECO = await getBalC(EcoC, userID, guildID);
-            let cooldown24h = 86400 * 1000 + Date.now();
+            let economy = new Economy(userID, guildID)
+            let userECO = await economy.getUserEco();
 
-            let bal = 100
+            const dailyEmbed = new EmbedBuilder().setTimestamp()
 
-            if (!userECO) {
-                addedS = await Dailys(EcoC, userID, guildID, bal, cooldown24h, false);
-                if (addedS)
-                    return mg.reply(`Added ${bal} sparks to your balance!`);
+            if (userECO[0]?.balance >= max_coins) {
+                dailyEmbed.setDescription("You have reached the maximum amount of sparks").setColor("DarkRed")
+                return mg.reply({ embeds: [dailyEmbed] })
             }
 
-            if (userECO.balance === 100000) {
-                return mg.reply("You are too rich...");
-            }
+            let dailyCooldown = userECO[0].dailyc
+            let cooldown24h = parseInt(process.env.dailyc) + Date.now();
 
-            if (userECO.dailyc && userECO.dailyc > Date.now()) {
-                let remaining = userECO.dailyc - Date.now();
-                let remainingT = Math.floor(userECO.dailyc / 1000);
+            if (dailyCooldown && dailyCooldown > Date.now()) {
+                let remaining = dailyCooldown - Date.now();
+                let remainingT = Math.floor(dailyCooldown / 1000);
 
-                return mg.reply(`wait for ${time(remainingT, TimestampStyles.RelativeTime)}`)
+                dailyEmbed.setDescription(`You have to wait for ${time(remainingT, TimestampStyles.RelativeTime)}`).setColor("Red")
+                return mg.reply({ embeds: [dailyEmbed] })
                     .then(async (msg) => {
                         setTimeout(async () => {
                             try {
@@ -39,15 +40,17 @@ export default {
                                 console.warn("Message could'nt be deleted:", err.message);
                             }
                         }, remaining);
-                    });
+                    }).catch(console.error);
             }
 
-            userECO.balance += bal;
-            addedS = await Dailys(EcoC, userID, guildID, userECO.balance, cooldown24h, true)
+            userECO[0].balance += bal;
+            let resultat = await economy.setSparks(userECO[0].balance, "dailyc", cooldown24h)
 
-            if (addedS) {
-                return mg.reply(`Daily : ${bal} has been added to your balance`);
-            }
+            if (!resultat)
+                return msg.reply({ embeds: [CmdError()] });
+
+            dailyEmbed.setDescription(`Added \`${balance}\` sparks to your balance!`)
+            return mg.reply({ embeds: [dailyEmbed] });
         } catch (error) {
             Print("[DAILYcmd] " + error, "Red");
             ErrorLog("DAILYcmd", error);
