@@ -14,7 +14,7 @@ import asciiTable from "ascii-table";
 import { fileURLToPath, pathToFileURL } from "url";
 
 const cmdTable = new asciiTable("Commands");
-cmdTable.setHeading("Name", "Type", "Execute");
+cmdTable.setHeading("Name", "Type", "Execute", "Category");
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 export async function commandHandler(client) {
@@ -37,9 +37,9 @@ export async function commandHandler(client) {
                     if ('data' in cmd && 'execute' in cmd) {
                         client.commands.set(cmd.data.name, cmd);
                         cmds.push(cmd.data.toJSON());
-                        cmdTable.addRow(file, "Slash", "Loaded");
+                        cmdTable.addRow(file, "Slash", "Loaded", folder);
                     } else {
-                        cmdTable.addRow(file, "Slash", "Unloaded");
+                        cmdTable.addRow(file, "Slash", "Unloaded", folder);
                     }
                 } catch (error) {
                     Print("[COMMANDS Files] " + error, "Red");
@@ -63,9 +63,9 @@ export async function commandHandler(client) {
                     if (pre.prerun || pre.name) {
                         client.prefixs.set(pre.name, pre);
                         prefixs.push(pre.name);
-                        cmdTable.addRow(file, "Prefix", "Loaded");
+                        cmdTable.addRow(file, "Prefix", "Loaded", folder);
                     } else {
-                        cmdTable.addRow(file, "Prefix", "Unloaded");
+                        cmdTable.addRow(file, "Prefix", "Unloaded", folder);
                     }
                 } catch (error) {
                     Print("[COMMANDS Files] " + error, "Red");

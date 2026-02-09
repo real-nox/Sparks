@@ -8,7 +8,7 @@ export function ErrorLog(title, message) {
 
         const Embed = new EmbedBuilder().setTitle(`${title}`).setDescription(`> ${message}`).setColor("Red");
 
-        webhook.send({ content: `<@&1227234977985466449>`, embeds: [Embed] });
+        webhook.send({ content: `<@&1470412330214097050>`, embeds: [Embed] });
     } catch (err) {
         Print("[ERROR] : " + err, "Red");
     }
@@ -34,7 +34,7 @@ export function SuggestionLog(user, message) {
 
         const Embed = new EmbedBuilder().setTitle(`Suggestion from : ${user}`).setDescription(`${message}`).setColor("Green").setTimestamp();
 
-        const res = webhook.send({ content: `<@&1227234977985466449>`, embeds: [Embed] });
+        const res = webhook.send({ content: `<@&1470412330214097050>`, embeds: [Embed] });
 
         if (res) return true;
         return false;
@@ -53,3 +53,5 @@ export function CmdError() {
         Print("[CMDERROR] : " + err, "Red")
     }
 }
+
+export const incorrectformcmd = new EmbedBuilder().setDescription("Incorrect use of command!").setColor("Red")

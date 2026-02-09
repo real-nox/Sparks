@@ -13,7 +13,7 @@ export default {
 
             let resultat = await server.getGuild(DB, guildID);
 
-            if (!resultat.length) {
+            if (!resultat || !resultat.length) {
                 if (guild.systemChannel) {
                     const JoinBed = new EmbedBuilder()
                         .setColor("Green")
