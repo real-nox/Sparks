@@ -7,25 +7,25 @@ import { LoadDB } from "./handler/dbHandler.js";
 import { ErrorLog } from "./systems/LogSystem.js";
 import { Print } from "./handler/extraHandler.js";
 
-import discord from "discord.js";
+import { Client, Collection, GatewayIntentBits } from "discord.js";
 
 //Settings
 const token = process.env.TOKEN;
 
-const bot = new discord.Client({
+const bot = new Client({
     intents: [
-        discord.GatewayIntentBits.Guilds,
-        discord.GatewayIntentBits.GuildMessages,
-        discord.GatewayIntentBits.GuildMembers,
-        discord.GatewayIntentBits.MessageContent
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.MessageContent
     ]
 });
 
 //Bot collections
-bot.prefixs = new discord.Collection();
-bot.commands = new discord.Collection();
-bot.events = new discord.Collection();
-bot.cooldowns = new discord.Collection();
+bot.prefixs = new Collection();
+bot.commands = new Collection();
+bot.events = new Collection();
+bot.cooldowns = new Collection();
 
 bot.login(token).then(async () => {
     try {
