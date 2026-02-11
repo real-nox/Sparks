@@ -44,7 +44,7 @@ export default {
                         (!RGLConfig.rounds || !RGLConfig.time) ||
                         ((RGLConfig.rounds > 20 || RGLConfig.rounds < 2) || (RGLConfig.time > 60 || RGLConfig.time < 10) || (RGLConfig.winnersC > 3 || RGLConfig.winnersC < 1))) {
 
-                        ErrEmbed.setDescription("```Command format is incorrect !rgl -start <rounds> <duration in sec> <(winners) optional 3 by default>```");
+                        ErrEmbed.setDescription("```Command format is incorrect !rgl start <rounds> <duration in sec> <(winners) optional 3 by default>```");
                         return mg.reply({ embeds: [ErrEmbed] });
                     }
 

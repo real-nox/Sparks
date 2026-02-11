@@ -82,9 +82,9 @@ export default class RGLGame {
             if (msg.author.bot) return;
             if (msg.channel.id === this.channelID) {
 
-                if (!(msg.content.includes("rgl -end") && this.mg.author === msg.author)) {
+                if (!(msg.content.includes("rgl end") && this.mg.author === msg.author)) {
                     if (this.light === "Red") {
-                        msg.react("🪦");
+                        await msg.react("🪦");
                         this.RedLight(msg);
                     } else if (this.light === "Green") {
                         this.GreenLight(msg);

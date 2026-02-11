@@ -4,7 +4,7 @@ import { ErrorLog } from "../systems/LogSystem.js";
 
 export default class Mini_GamesDB {
     /**
-     * @param {*} gamename should be either : `RGL`....
+     * @param {*} gamename should be either : `RGL` `GTN`....
      */
     constructor(guildID, channelID, gamename) {
         this.data = DB
@@ -83,6 +83,7 @@ export default class Mini_GamesDB {
                     .eq("guild_id", this.guildID)
                     .eq("channel_id", this.channelID)
 
+                    console.log(error)
                 if (error) return false;
                 return;
             }
