@@ -6,7 +6,7 @@ export default {
     prerun(mg, client) {
         const helpEmbed = new EmbedBuilder()
             .setTitle("Commands List - Help")
-            .setDescription(`Welcome to **${client.user.username}** Help command!\n- Here you will find many things related to this bot's games,\neconomy and more... commandes\nEnjoy!`)
+            .setDescription(`Welcome to **${client.user.username}** Help command!\n- Here you will find many things related to this bot's games,\neconomy and more... commandes\n\n- Suggest commands/functions via \`/suggest\`\nEnjoy!`)
             .setColor("Gold")
 
             const selectMenu = new StringSelectMenuBuilder()
@@ -22,7 +22,7 @@ export default {
                 .setLabel("Mini Games")
                 .setEmoji("🏆")
                 .setDescription("RGL, Guess the number and much more..")
-                .setValue("mingames"),
+                .setValue("minigames"),
                 new StringSelectMenuOptionBuilder()
                 .setLabel("Tickets")
                 .setEmoji("🧾")
