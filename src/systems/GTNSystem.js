@@ -104,7 +104,6 @@ export default class GTNGame {
         return this.End()
     }
 
-
     async End() {
         this.guessN = null
         this.newstart = null

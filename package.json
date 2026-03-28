@@ -5,7 +5,7 @@
   "main": "src/core.js",
   "scripts": {
     "dev": "nodemon src/core.js",
-    "test": "pm2 start src/core.js -name testing"
+    "test": "node src/core.js"
   },
   "type": "module",
   "author": "Ranox",
