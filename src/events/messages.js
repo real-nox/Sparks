@@ -45,7 +45,6 @@ export default {
             //Owner
             if (precmd.owner)
                 if (mg.author.id !== process.env.ownerid) return;
-
             //Admin
             if (precmd.admin)
                 if (!mg.member.permissions.has(PermissionFlagsBits.Administrator)) {

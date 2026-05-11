@@ -1,6 +1,6 @@
 import { ErrorLog } from "../systems/LogSystem.js"
 import { Print } from "../handler/extraHandler.js"
-import { DB } from "../handler/dbHandler.js";
+import { DB } from "../handler/supabase.js";
 import ServerDB from "./ServerDB.js";
 
 export async function getTCol(guildID) {

@@ -1,4 +1,4 @@
-import { DB } from "../handler/dbHandler.js";
+import { DB } from "../handler/supabase.js";
 import { Print } from "../handler/extraHandler.js"
 import { ErrorLog } from "../systems/LogSystem.js";
 

@@ -2,7 +2,7 @@ import { config } from "dotenv"; config({ quiet: true });
 
 import { commandHandler } from "./handler/commandHandler.js";
 import { eventHandler } from "./handler/eventHandler.js";
-import { LoadDB } from "./handler/dbHandler.js";
+import { LoadDB } from "./handler/supabase.js";
 
 import { ErrorLog } from "./systems/LogSystem.js";
 import { Print } from "./handler/extraHandler.js";
