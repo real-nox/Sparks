@@ -3,53 +3,60 @@ import { Print } from "../../../handler/extraHandler.js"
 import { CmdError, ErrorLog } from "../../../systems/LogSystem.js";
 import Economy from "../../../data/EconomyDB.js";
 
-const max_coins = process.env.max_coins
 export default {
     name: "dailys",
     cooldown: 4000,
     async prerun(mg) {
         try {
-            const userID = mg.author.id;
-            const guildID = mg.guild.id;
-            const bal = 100
+            let userID = mg.author?.id;
+            let guildID = mg.guild?.id;
 
-            let economy = new Economy(userID, guildID)
-            let userECO = await economy.getUserEco();
+            let economy = new Economy(userID, guildID);
+            let eco_user = await economy.getUserEco();
 
-            const dailyEmbed = new EmbedBuilder().setTimestamp()
-
-            if (userECO[0]?.balance >= max_coins) {
-                dailyEmbed.setDescription("You have reached the maximum amount of sparks").setColor("DarkRed")
-                return mg.reply({ embeds: [dailyEmbed] })
+            let daily_config = {
+                sparks: 100,
+                balance: 100,
+                max_coins: process.env.max_coins,
+                cooldown24h: parseInt(process.env.earnc) + Date.now(),
             }
 
-            let dailyCooldown = userECO[0].dailyc
-            let cooldown24h = parseInt(process.env.dailyc) + Date.now();
+            const dailyEmbed = new EmbedBuilder().setTimestamp();
 
-            if (dailyCooldown && dailyCooldown > Date.now()) {
-                let remaining = dailyCooldown - Date.now();
-                let remainingT = Math.floor(dailyCooldown / 1000);
+            if (eco_user && eco_user.length) {
+                if (eco_user[0]?.balance >= daily_config.max_coins) {
+                    dailyEmbed.setDescription("You have reached the maximum amount of sparks").setColor("DarkRed");
+                    return mg.reply({ embeds: [dailyEmbed] });
+                }
 
-                dailyEmbed.setDescription(`You have to wait for ${time(remainingT, TimestampStyles.RelativeTime)}`).setColor("Red")
-                return mg.reply({ embeds: [dailyEmbed] })
-                    .then(async (msg) => {
-                        setTimeout(async () => {
-                            try {
-                                await msg.delete();
-                            } catch (err) {
-                                console.warn("Message could'nt be deleted:", err.message);
-                            }
-                        }, remaining);
-                    }).catch(console.error);
+                let dailyCooldown = userECO[0]?.dailyc
+
+                if (dailyCooldown && dailyCooldown > Date.now()) {
+                    let remaining = dailyCooldown - Date.now();
+                    let remainingT = Math.floor(dailyCooldown / 1000);
+
+                    dailyEmbed.setDescription(`You have to wait for ${time(remainingT, TimestampStyles.RelativeTime)}`).setColor("Red")
+                    return mg.reply({ embeds: [dailyEmbed] })
+                        .then(async (msg) => {
+                            setTimeout(async () => {
+                                try {
+                                    await msg.delete();
+                                } catch (err) {
+                                    console.warn("Message could'nt be deleted:", err.message);
+                                }
+                            }, remaining);
+                        }).catch(console.error);
+                }
+
+                daily_config.balance += eco_user[0].balance
             }
 
-            userECO[0].balance += bal;
-            let resultat = await economy.setSparks(userECO[0].balance, "dailyc", cooldown24h)
+            let resultat = await economy.setSparks(daily_config.balance, "dailyc", daily_config.cooldown24h)
 
             if (!resultat)
                 return msg.reply({ embeds: [CmdError()] });
 
-            dailyEmbed.setDescription(`Added \`${balance}\` sparks to your balance!`)
+            dailyEmbed.setDescription(`Added \`${daily_config.sparks}\` sparks to your balance!`);
             return mg.reply({ embeds: [dailyEmbed] });
         } catch (error) {
             Print("[DAILYcmd] " + error, "Red");

@@ -12,10 +12,14 @@ export default class Economy {
 
     async setEcoUser() {
         try {
+            console.log( await this.db.from("economy"))
             const { error } = await this.db.from("economy")
                 .insert({ guild_id: this.guildId, user_id: this.userId });
+                console.log("herror?", error)
 
             if (error) throw error;
+
+            console.log("hererre")
 
             return;
         } catch (error) {
@@ -31,8 +35,14 @@ export default class Economy {
                 .eq("guild_id", this.guildId)
                 .eq("user_id", this.userId)
 
-            if (error || !data.length)
+            console.log(data.length == 0)
+
+            if (data.length == 0) 
                 await this.setEcoUser()
+
+            if (error) throw error
+
+            console.log("dbb", data)
 
             return data;
         } catch (error) {
@@ -61,7 +71,9 @@ export default class Economy {
         try {
             const data = await this.getUserEco()
 
-            let oldBal = data[0].balance
+            console.log("data", data)
+
+            let oldBal = data[0]?.balance
             if (oldBal + amount >= max_coins) {
                 const { error } = await this.db.from("economy")
                     .update({ balance: max_coins })
@@ -83,5 +95,15 @@ export default class Economy {
             Print("[EARNCDB] " + error, "Red");
             ErrorLog("EARNCDB", error);
         }
+    }
+
+    async delUser() {
+        const response = await this.db.from("economy")
+            .delete()
+            .eq("guild_id", this.guildId)
+            .eq("user_id", this.userId);
+
+        console.log("resp", response)
+        return;
     }
 }
