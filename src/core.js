@@ -13,12 +13,7 @@ import { Client, Collection, GatewayIntentBits } from "discord.js";
 let token = process.env.TOKEN;
 
 const bot = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.GuildMembers,
-        GatewayIntentBits.MessageContent
-    ]
+    intents: [Object.keys(GatewayIntentBits)]
 });
 
 //Bot collections
