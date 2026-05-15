@@ -12,14 +12,12 @@ export default class Economy {
 
     async setEcoUser() {
         try {
-            console.log( await this.db.from("economy"))
             const { error } = await this.db.from("economy")
                 .insert({ guild_id: this.guildId, user_id: this.userId });
                 console.log("herror?", error)
 
             if (error) throw error;
 
-            console.log("hererre")
 
             return;
         } catch (error) {
@@ -35,14 +33,11 @@ export default class Economy {
                 .eq("guild_id", this.guildId)
                 .eq("user_id", this.userId)
 
-            console.log(data.length == 0)
 
             if (data.length == 0) 
                 await this.setEcoUser()
 
             if (error) throw error
-
-            console.log("dbb", data)
 
             return data;
         } catch (error) {
